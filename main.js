@@ -46,21 +46,13 @@ openButton.addEventListener("click", openUI);
 overlay.addEventListener("click", closeUI);
 closeButton.addEventListener("click", closeUI);
 
-fetch("data/study-area-watersheds.geojson")
-  .then((response) => {
-    return response.json();
-  })
-  .then((data) => {
-    d.local.watsersheds = data;
-  });
-
-  fetch("data/pinellas-study-dem.geojson")
-  .then((response) => {
-    return response.json();
-  })
-  .then((data) => {
-    d.local.contours = data;
-  });
+Promise.all([
+  fetch("data/study-area-watersheds.geojson").then(response => response.json()),
+  fetch("data/pinellas-study-dem.geojson").then(response => response.json())
+])
+.then(([watershedsData, contoursData]) => {
+  d.local.watersheds = watershedsData;
+  d.local.contours = contoursData;
 
 // Create the map object
 const map = new maplibregl.Map({
@@ -75,7 +67,7 @@ map.on("load", function () {
   // Add source data
   map.addSource("watersheds", {
     type: "geojson",
-    data: d.local.watsersheds,
+    data: d.local.watersheds,
   });
 
   map.addSource("pinellas-contours", {
@@ -108,5 +100,26 @@ map.on("load", function () {
       },
     });
 
+    processLayers();
+
 });
 
+})
+.catch(error => {
+  console.error("Error fetching data:", error);
+});
+
+function processLayers() {
+    // Map over each watershed feature to compute its area
+    const results = d.local.watersheds.features.map(watershed => {
+      // Calculate area using Turf.js
+      const watershedArea = area(watershed);
+
+      return {
+          watershedId: watershed.properties.id,
+          area: watershedArea
+      };
+  });
+
+  console.log(results);
+}
