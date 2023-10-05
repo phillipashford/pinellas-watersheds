@@ -64,6 +64,9 @@ const map = new maplibregl.Map({
 
 // Add source data and layers after the map has loaded
 map.on("load", function () {
+
+  preprocessData();
+
   // Add source data
   map.addSource("watersheds", {
     type: "geojson",
@@ -81,8 +84,9 @@ map.on("load", function () {
       type: "fill",
       source: "watersheds",
       paint: {
-        "fill-color": "#aaa",
-        "fill-opacity": 0.8,
+        "fill-color": "grey",
+        "fill-opacity": 0.3,
+        "fill-outline-color": "white",
       },
     });
 
@@ -95,13 +99,21 @@ map.on("load", function () {
         "line-cap": "round",
       },
       paint: {
-        "line-color": "pink",
-        "line-width": 1,
+        "line-color": "green",
+        "line-width": 0.5,
       },
     });
 
-    processLayers();
-
+    map.on('click', 'watersheds', function (e) {
+      if (e.features[0].properties.area) {
+  
+          new maplibregl.Popup()
+              .setLngLat(e.lngLat)
+              .setHTML(`Area: ${e.features[0].properties.area/1e6.toFixed(2)} sq km`)
+              .addTo(map);
+      }
+  });
+  
 });
 
 })
@@ -109,17 +121,11 @@ map.on("load", function () {
   console.error("Error fetching data:", error);
 });
 
-function processLayers() {
-    // Map over each watershed feature to compute its area
-    const results = d.local.watersheds.features.map(watershed => {
+function preprocessData() {
+  d.local.watersheds.features.forEach(watershed => {
       // Calculate area using Turf.js
       const watershedArea = area(watershed);
-
-      return {
-          watershedId: watershed.properties.id,
-          area: watershedArea
-      };
+      // Assign the computed area back to the watershed's properties
+      watershed.properties.area = watershedArea;
   });
-
-  console.log(results);
 }
