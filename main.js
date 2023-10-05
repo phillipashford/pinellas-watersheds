@@ -22,6 +22,16 @@ const openButton = document.querySelector("#openButton");
 const offCanvas = document.querySelector("#offCanvas");
 const overlay = document.querySelector("#overlay");
 const closeButton = document.querySelector("#closeButton");
+const precipitationSlider = document.querySelector("#precipitationSlider");
+const sliderValueDisplay = document.querySelector("#sliderValue");
+
+precipitationSlider.addEventListener("input", function() {
+  sliderValueDisplay.innerText = precipitationSlider.value;
+  const precipitationValue = parseFloat(precipitationSlider.value);
+  calculateRunoff(precipitationValue);
+  console.log(d.local.watersheds);
+});
+
 
 const openUI = () => {
   offCanvas.classList.remove("translate-x-[-100%]");
@@ -45,6 +55,7 @@ const closeUI = () => {
 openButton.addEventListener("click", openUI);
 overlay.addEventListener("click", closeUI);
 closeButton.addEventListener("click", closeUI);
+
 
 Promise.all([
   fetch("data/study-area-watersheds.geojson").then(response => response.json()),
@@ -71,6 +82,7 @@ map.on("load", function () {
   map.addSource("watersheds", {
     type: "geojson",
     data: d.local.watersheds,
+    generateId: true
   });
 
   map.addSource("pinellas-contours", {
@@ -103,17 +115,20 @@ map.on("load", function () {
         "line-width": 0.5,
       },
     });
-
-    map.on('click', 'watersheds', function (e) {
-      if (e.features[0].properties.area) {
   
-          new maplibregl.Popup()
-              .setLngLat(e.lngLat)
-              .setHTML(`Area: ${(e.features[0].properties.area / 1e6).toFixed(2)} sq km`)
-              .addTo(map);
-      }
+  map.on('click', 'watersheds', function (e) {
+    const clickedFeatureIndex = e.features[0].id;
+    console.log("clickedfeatureindex: ", clickedFeatureIndex);
+    const correspondingFeature = d.local.watersheds.features[clickedFeatureIndex];
+    const runoffValue = correspondingFeature.properties.runoff;
+    const areaValue = (e.features[0].properties.area / 1e6).toFixed(2);
+    
+    new maplibregl.Popup()
+      .setLngLat(e.lngLat)
+      .setHTML(`<b>Watershed Area:</b> ${areaValue} sq km <br> <b>Average Runoff Flow Rate:</B> ${runoffValue} m^3/s`)
+      .addTo(map);
   });
-  
+
 });
 
 })
@@ -122,10 +137,27 @@ map.on("load", function () {
 });
 
 function preprocessData() {
-  d.local.watersheds.features.forEach(watershed => {
+  d.local.watersheds.features.forEach((watershed, index) => {
+      watershed.id = index;
       // Calculate area using Turf.js
       const watershedArea = area(watershed);
       // Assign the computed area back to the watershed's properties
       watershed.properties.area = watershedArea;
+      // Set initial value for runoff
+      watershed.properties.runoff = 0;
+      
   });
 }
+
+function calculateRunoff(precipitation) {
+  const avgIntensity = precipitation / 24;
+
+  d.local.watersheds.features.forEach(watershed => {
+    const areaKm2 = watershed.properties.area / 1e6;
+    const runoffCoefficient = 0.5;
+
+    const runoffRate = (runoffCoefficient * avgIntensity * areaKm2).toFixed(0);
+    watershed.properties.runoff = runoffRate;
+  });
+}
+
