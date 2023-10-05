@@ -109,7 +109,7 @@ map.on("load", function () {
   
           new maplibregl.Popup()
               .setLngLat(e.lngLat)
-              .setHTML(`Area: ${e.features[0].properties.area/1e6.toFixed(2)} sq km`)
+              .setHTML(`Area: ${(e.features[0].properties.area / 1e6).toFixed(2)} sq km`)
               .addTo(map);
       }
   });
