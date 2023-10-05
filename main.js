@@ -29,7 +29,6 @@ precipitationSlider.addEventListener("input", function() {
   sliderValueDisplay.innerText = precipitationSlider.value;
   const precipitationValue = parseFloat(precipitationSlider.value);
   calculateRunoff(precipitationValue);
-  console.log(d.local.watersheds);
 });
 
 
@@ -90,6 +89,8 @@ map.on("load", function () {
     data: d.local.contours,
   });
 
+  console.log(d.local.contours);
+
     // Add geojson polygon layers
   map.addLayer({
       id: "watersheds",
@@ -122,10 +123,11 @@ map.on("load", function () {
     const correspondingFeature = d.local.watersheds.features[clickedFeatureIndex];
     const runoffValue = correspondingFeature.properties.runoff;
     const areaValue = (e.features[0].properties.area / 1e6).toFixed(2);
+    const watershedName =  correspondingFeature.properties.assessmentunitname;
     
     new maplibregl.Popup()
       .setLngLat(e.lngLat)
-      .setHTML(`<b>Watershed Area:</b> ${areaValue} sq km <br> <b>Average Runoff Flow Rate:</B> ${runoffValue} m^3/s`)
+      .setHTML(`<b>Drainage:</b> ${watershedName} <br> <b>Watershed Area:</b> ${areaValue} sq km <br> <b>Average Runoff Flow Rate:</B> ${runoffValue} m^3/s`)
       .addTo(map);
   });
 
@@ -154,7 +156,7 @@ function calculateRunoff(precipitation) {
 
   d.local.watersheds.features.forEach(watershed => {
     const areaKm2 = watershed.properties.area / 1e6;
-    const runoffCoefficient = 0.5;
+    const runoffCoefficient = 0.6;
 
     const runoffRate = (runoffCoefficient * avgIntensity * areaKm2).toFixed(0);
     watershed.properties.runoff = runoffRate;
