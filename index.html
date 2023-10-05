@@ -8,6 +8,52 @@
   </head>
   <body>
     <div id="map" class="h-screen w-screen"></div>
-<script type="module" src="/main.js"></script>
+    <button
+      id="openButton"
+      class="fixed top-2 left-2 z-20 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow"
+    >
+      Find your park
+    </button>
+
+    <div
+      id="offCanvas"
+      class="fixed top-0 left-0 z-30 w-full sm:w-1/2 h-screen bg-white shadow-lg overflow-y-auto transform translate-x-[-100%] p-2"
+    >
+      <div
+        id="closeButton"
+        class="flex justify-start text-3xl ml-2 text-zinc-600 cursor-pointer"
+      >
+        &times;
+      </div>
+      <h1 class="text-2xl font-semibold p-2">Need to get out?</h1>
+      <div class="p-2">
+        Find parks within one mile of your current location with MapLibre's
+        geolocation service. The map will then dynamically query
+        <a
+          class="text-blue-500 hover:text-blue-600 underline hover:no-underline"
+          href="https://hifld-geoplatform.opendata.arcgis.com/"
+          >DHS.gov Open Data Portal</a
+        >
+        for protected areas (PADUS) within one mile of your location. The map
+        then filters for publicly open areas and uses
+        <a
+          class="text-blue-500 hover:text-blue-600 underline hover:no-underline"
+          href="https://turfjs.org/"
+          >Turf.js</a
+        >
+        to buffer and intersect these areas with your location. The map displays
+        the results and shows a list in the below section.
+      </div>
+      <div id="content" class="p-2">
+        Location not found yet. Click geolocation service.
+      </div>
+    </div>
+
+    <div
+      id="overlay"
+      class="fixed top-0 left-0 z-10 w-screen h-screen bg-gray-800 bg-opacity-50 opacity-0 pointer-events-none"
+    ></div>
+
+    <script type="module" src="/main.js"></script>
   </body>
 </html>
