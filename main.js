@@ -1,17 +1,27 @@
-// import the MapLibre library and our styles
+// Import the MapLibre library, turf modules, api key, and our styles
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./style.css";
-import maplibregl from "maplibre-gl";
+import maplibregl from "maplibre-gl"
 import { API_KEY } from './scripts/key';
 const apiKey = API_KEY;
+import area from '@turf/area';
+import lineIntersect from '@turf/line-intersect';
+import { lineString } from '@turf/helpers';
 
-// Create the map object
-const map = new maplibregl.Map({
-  container: "map",
-  center: [-82.6422, 27.7650],
-  zoom: 13.75,
-  style: `https://api.maptiler.com/maps/outdoor-v2/style.json?key=${apiKey}`,
-});
+// Set global variables
+// ##########################
+let d = {
+  i: 0,
+  local: {},
+}
+
+// Build UI content
+// ##########################
+const content = document.querySelector("#content");
+const openButton = document.querySelector("#openButton");
+const offCanvas = document.querySelector("#offCanvas");
+const overlay = document.querySelector("#overlay");
+const closeButton = document.querySelector("#closeButton");
 
 const openUI = () => {
   offCanvas.classList.remove("translate-x-[-100%]");
@@ -36,16 +46,41 @@ openButton.addEventListener("click", openUI);
 overlay.addEventListener("click", closeUI);
 closeButton.addEventListener("click", closeUI);
 
+fetch("data/study-area-watersheds.geojson")
+  .then((response) => {
+    return response.json();
+  })
+  .then((data) => {
+    d.local.watsersheds = data;
+  });
+
+  fetch("data/pinellas-study-dem.geojson")
+  .then((response) => {
+    return response.json();
+  })
+  .then((data) => {
+    d.local.contours = data;
+  });
+
+// Create the map object
+const map = new maplibregl.Map({
+  container: "map",
+  center: [-82.6422, 27.7650],
+  zoom: 13.75,
+  style: `https://api.maptiler.com/maps/outdoor-v2/style.json?key=${apiKey}`,
+});
+
 // Add source data and layers after the map has loaded
 map.on("load", function () {
   // Add source data
   map.addSource("watersheds", {
     type: "geojson",
-    data: "data/study-area-watersheds.geojson",
+    data: d.local.watsersheds,
   });
+
   map.addSource("pinellas-contours", {
     type: "geojson",
-    data: "data/pinellas-study-dem.geojson",
+    data: d.local.contours,
   });
 
     // Add geojson polygon layers
@@ -74,3 +109,4 @@ map.on("load", function () {
     });
 
 });
+
