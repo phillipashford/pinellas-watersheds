@@ -58,7 +58,7 @@ closeButton.addEventListener("click", closeUI);
 
 Promise.all([
   fetch("data/study-area-watersheds.geojson").then(response => response.json()),
-  fetch("data/pinellas-study-dem.geojson").then(response => response.json())
+  fetch("data/pinellas-study-dem-optimized.geojson").then(response => response.json())
 ])
 .then(([watershedsData, contoursData]) => {
   d.local.watersheds = watershedsData;
@@ -89,8 +89,6 @@ map.on("load", function () {
     data: d.local.contours,
   });
 
-  console.log(d.local.contours);
-
     // Add geojson polygon layers
   map.addLayer({
       id: "watersheds",
@@ -119,7 +117,6 @@ map.on("load", function () {
   
   map.on('click', 'watersheds', function (e) {
     const clickedFeatureIndex = e.features[0].id;
-    console.log("clickedfeatureindex: ", clickedFeatureIndex);
     const correspondingFeature = d.local.watersheds.features[clickedFeatureIndex];
     const runoffValue = correspondingFeature.properties.runoff;
     const areaValue = (e.features[0].properties.area / 1e6).toFixed(2);
