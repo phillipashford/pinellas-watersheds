@@ -5,32 +5,21 @@ import maplibregl from "maplibre-gl"
 import { API_KEY } from './scripts/key';
 const apiKey = API_KEY;
 import area from '@turf/area';
-import lineIntersect from '@turf/line-intersect';
-import { lineString } from '@turf/helpers';
 
 // Set global variables
 // ##########################
 let d = {
-  i: 0,
   local: {},
 }
 
 // Build UI content
 // ##########################
-const content = document.querySelector("#content");
 const openButton = document.querySelector("#openButton");
 const offCanvas = document.querySelector("#offCanvas");
 const overlay = document.querySelector("#overlay");
 const closeButton = document.querySelector("#closeButton");
 const precipitationSlider = document.querySelector("#precipitationSlider");
 const sliderValueDisplay = document.querySelector("#sliderValue");
-
-precipitationSlider.addEventListener("input", function() {
-  sliderValueDisplay.innerText = precipitationSlider.value;
-  const precipitationValue = parseFloat(precipitationSlider.value);
-  calculateRunoff(precipitationValue);
-});
-
 
 const openUI = () => {
   offCanvas.classList.remove("translate-x-[-100%]");
@@ -54,8 +43,13 @@ const closeUI = () => {
 openButton.addEventListener("click", openUI);
 overlay.addEventListener("click", closeUI);
 closeButton.addEventListener("click", closeUI);
+precipitationSlider.addEventListener("input", function() {
+  sliderValueDisplay.innerText = precipitationSlider.value;
+  const precipitationValue = parseFloat(precipitationSlider.value);
+  calculateRunoff(precipitationValue);
+});
 
-
+// Retrieve data
 Promise.all([
   fetch("data/study-area-watersheds.geojson").then(response => response.json()),
   fetch("data/pinellas-study-dem-optimized.geojson").then(response => response.json())
@@ -75,7 +69,7 @@ const map = new maplibregl.Map({
 // Add source data and layers after the map has loaded
 map.on("load", function () {
 
-  preprocessData();
+  calcArea();
 
   // Add source data
   map.addSource("watersheds", {
@@ -89,7 +83,7 @@ map.on("load", function () {
     data: d.local.contours,
   });
 
-    // Add geojson polygon layers
+    // Add and style geojson polygon layers
   map.addLayer({
       id: "watersheds",
       type: "fill",
@@ -115,13 +109,18 @@ map.on("load", function () {
       },
     });
   
+  // Map click listener  
   map.on('click', 'watersheds', function (e) {
+    // Associate layer features with local datastore
     const clickedFeatureIndex = e.features[0].id;
     const correspondingFeature = d.local.watersheds.features[clickedFeatureIndex];
-    const runoffValue = correspondingFeature.properties.runoff;
-    const areaValue = (e.features[0].properties.area / 1e6).toFixed(2);
+
+    // Assign constants for the popup
     const watershedName =  correspondingFeature.properties.assessmentunitname;
+    const areaValue = (e.features[0].properties.area / 1e6).toFixed(2);
+    const runoffValue = correspondingFeature.properties.runoff;
     
+    //Create popup
     new maplibregl.Popup()
       .setLngLat(e.lngLat)
       .setHTML(`<b>Drainage:</b> ${watershedName} <br> <b>Watershed Area:</b> ${areaValue} sq km <br> <b>Average Runoff Flow Rate:</B> ${runoffValue} m^3/s`)
@@ -135,7 +134,7 @@ map.on("load", function () {
   console.error("Error fetching data:", error);
 });
 
-function preprocessData() {
+function calcArea() {
   d.local.watersheds.features.forEach((watershed, index) => {
       watershed.id = index;
       // Calculate area using Turf.js
@@ -150,12 +149,14 @@ function preprocessData() {
 
 function calculateRunoff(precipitation) {
   const avgIntensity = precipitation / 24;
+  // Typical runoff coefficient for urbanized areas with a lot of pavement is 0.5-0.7
+  const runoffCoefficient = 0.6;
 
   d.local.watersheds.features.forEach(watershed => {
     const areaKm2 = watershed.properties.area / 1e6;
-    const runoffCoefficient = 0.6;
-
+    // Calculate runoff in cubic meters per second
     const runoffRate = (runoffCoefficient * avgIntensity * areaKm2).toFixed(0);
+    // Push value to store
     watershed.properties.runoff = runoffRate;
   });
 }
