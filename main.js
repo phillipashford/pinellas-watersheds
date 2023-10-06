@@ -162,4 +162,3 @@ function calculateRunoff(precipitation) {
     watershed.properties.runoff = runoffRate;
   });
 }
-
